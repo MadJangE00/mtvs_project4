@@ -61,3 +61,6 @@ requests==2.32.3 # HTTP 요청 (Langchain 등에서 사용될 수 있음)
 PyYAML==6.0.2 # YAML 파일 처리
 python-json-logger==3.3.0 # JSON 로깅 사용 시
 tqdm==4.67.1 # 진행률 표시
+
+# kafka
+kafka-python==2.2.10

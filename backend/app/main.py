@@ -5,6 +5,7 @@ import os
 
 # routers 폴더에서 words 모듈 임포트
 from .routers import words, works, episodes, characters, worlds, plannings, search, wordexamples
+from . import kafka_producer
 
 # from . import models # 만약 테이블 생성이 필요하다면
 # from .database import engine # 만약 테이블 생성이 필요하다면
@@ -39,4 +40,4 @@ async def root():
     return {"message": "Welcome to Personal Dictionary API"}
 
 
-# python -m uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+# python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
