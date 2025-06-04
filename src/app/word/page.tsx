@@ -1,8 +1,9 @@
 "use client";
 
-import WordCard from "@/components/WordCard";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
+import WordCardWithExamples from "@/components/WordCardWithExamples";
+import RelatedWordsModal from "@/components/RelatedWordsModal";
 
 interface Example {
   word_example_content: string;
@@ -19,24 +20,30 @@ interface Word {
   examples: Example[];
 }
 
-export default function WordsMain() {
+export default function WordPage() {
   const { data: session } = useSession();
   const userId = session?.user?.email ?? "guest";
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [targetWordName, setTargetWordName] = useState("");
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [words, setWords] = useState<Word[]>([]);
+  const [wordContent, setWordContent] = useState("");
   const [wordName, setWordName] = useState("");
   const [example1, setExample1] = useState("");
   const [example2, setExample2] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResult, setSearchResult] = useState<Word[]>([]);
+  const [sortByCount, setSortByCount] = useState(false);
 
-  // ✅ 단어 목록 불러오기
   const fetchWords = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/words/created_time/${userId}/sort`
-      );
-      if (!res.ok) {
-        throw new Error(`서버 응답 오류: ${res.status}`);
-      }
+      const endpoint = sortByCount
+        ? `http://localhost:8000/words/count/${userId}/sort`
+        : `http://localhost:8000/words/created_time/${userId}/sort`;
+
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error(`서버 응답 오류: ${res.status}`);
       const data = await res.json();
       setWords(data);
     } catch (error) {
@@ -45,18 +52,38 @@ export default function WordsMain() {
   };
 
   useEffect(() => {
-    if (userId) {
-      fetchWords();
-    }
-  }, [userId]);
+    if (userId) fetchWords();
+  }, [userId, sortByCount]);
 
-  // ✅ 단어 등록
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      alert("검색할 단어를 입력해주세요");
+      return;
+    }
+    try {
+      const res = await fetch(
+        `http://localhost:8000/words/${userId}/${encodeURIComponent(searchTerm)}`
+      );
+      if (res.status === 404) {
+        alert("해당 단어를 찾을 수 없습니다.");
+        setSearchResult([]);
+        return;
+      }
+      if (!res.ok) throw new Error(`검색 실패: ${res.status}`);
+      const data = await res.json();
+      setSearchResult([data]);
+    } catch (error) {
+      console.error("단어 검색 실패:", error);
+      alert("단어 검색 실패");
+      setSearchResult([]);
+    }
+  };
+
   const handlePost = async () => {
     if (!userId) {
       alert("로그인이 필요합니다.");
       return;
     }
-
     if (!wordName.trim()) {
       alert("단어를 입력해주세요");
       return;
@@ -65,12 +92,10 @@ export default function WordsMain() {
     try {
       const response = await fetch("http://localhost:8000/words/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           word_name: wordName,
-          word_content: "",
+          word_content: wordContent,
           user_id: userId,
           examples: [
             { word_example_content: example1 },
@@ -78,15 +103,11 @@ export default function WordsMain() {
           ],
         }),
       });
-
       const data = await response.json();
-      console.log("응답 결과:", data);
       alert("단어가 등록되었습니다!");
-
-      // 등록 후 다시 단어 목록 불러오기
       await fetchWords();
-
       setWordName("");
+      setWordContent("");
       setExample1("");
       setExample2("");
     } catch (error) {
@@ -107,6 +128,13 @@ export default function WordsMain() {
       />
       <input
         type="text"
+        placeholder="단어 설명"
+        value={wordContent}
+        onChange={(e) => setWordContent(e.target.value)}
+        className="w-full px-3 py-2 rounded mb-2"
+      />
+      <input
+        type="text"
         placeholder="예시 1"
         value={example1}
         onChange={(e) => setExample1(e.target.value)}
@@ -119,27 +147,120 @@ export default function WordsMain() {
         onChange={(e) => setExample2(e.target.value)}
         className="w-full px-3 py-2 rounded mb-4"
       />
-
       <button
         onClick={handlePost}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
+        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
       >
         단어 등록하기
       </button>
 
+      <button
+        onClick={() => setIsSearchModalOpen(true)}
+        className="bg-blue-500 text-white px-4 py-2 rounded mb-6 ml-2"
+      >
+        단어 검색
+      </button>
+
+      <RelatedWordsModal
+        targetWord={targetWordName}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+
+      {isSearchModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
+            <button
+              onClick={() => setIsSearchModalOpen(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+            >
+              ✕
+            </button>
+            <h2 className="text-xl font-bold mb-4">단어 검색</h2>
+            <input
+              type="text"
+              placeholder="검색할 단어 입력"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 rounded border mb-4"
+            />
+            <button
+              onClick={async () => {
+                await handleSearch();
+                setIsSearchModalOpen(false);
+              }}
+              className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+            >
+              검색하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {searchResult.length > 0 && (
+        <div className="mt-8 space-y-4">
+          <h1 className="text-2xl font-bold mb-2">🔍 검색 결과</h1>
+          {searchResult.map((word) => (
+            <div key={word.words_id}>
+              <WordCardWithExamples word={word} />
+              <button
+                onClick={() => {
+                  setTargetWordName(word.word_name);
+                  setIsModalOpen(true);
+                }}
+                className="mt-2 text-sm text-blue-500 underline"
+              >
+                관련 단어 보기
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => setSearchResult([])}
+            className="text-sm text-gray-500 underline"
+          >
+            검색 결과 초기화
+          </button>
+        </div>
+      )}
+
       <div className="mt-8 space-y-4">
         <h1 className="text-2xl font-bold mb-4">📘 단어 목록</h1>
+
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setSortByCount(false)}
+            className={`px-4 py-2 rounded text-white ${
+              !sortByCount ? "bg-blue-500" : "bg-gray-400"
+            }`}
+          >
+            최신순 보기
+          </button>
+          <button
+            onClick={() => setSortByCount(true)}
+            className={`px-4 py-2 rounded text-white ${
+              sortByCount ? "bg-blue-500" : "bg-gray-400"
+            }`}
+          >
+            조회수순 보기
+          </button>
+        </div>
+
         {words.length === 0 ? (
           <p>단어가 없습니다.</p>
         ) : (
           words.map((word) => (
-            <WordCard
-              key={word.words_id}
-              words_id={word.words_id}
-              word_name={word.word_name}
-              word_content={word.word_content}
-              user_id={word.user_id}
-            />
+            <div key={word.words_id}>
+              <WordCardWithExamples word={word} />
+              <button
+                onClick={() => {
+                  setTargetWordName(word.word_name);
+                  setIsModalOpen(true);
+                }}
+                className="mt-2 text-sm text-blue-500 underline"
+              >
+                관련 단어 보기
+              </button>
+            </div>
           ))
         )}
       </div>
