@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
 # routers 폴더에서 words 모듈 임포트
 from .routers import words, works, episodes, characters, worlds, plannings, search, wordexamples
@@ -23,6 +24,21 @@ if DATABASE_URL is None:
     )
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:3000",  # 프론트엔드 도메인
+    "http://192.168.0.75:3000",  # 혹은 IP 주소 버전
+    # 필요하다면 다른 도메인 추가 가능
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # 허용할 출처 리스트
+    allow_credentials=True,
+    allow_methods=["*"],  # 허용 HTTP 메서드 전체
+    allow_headers=["*"],  # 허용 헤더 전체
+)
+
 
 # models.Base.metadata.create_all(bind=engine)
 
