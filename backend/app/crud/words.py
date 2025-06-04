@@ -167,3 +167,8 @@ def increment_word_count_atomic(db: Session, word_id: int):
         db.refresh(db_word)  # refresh는 여전히 필요
         return db_word
     return None
+
+
+def get_word_explanation_by_name(db: Session, word_name: str) -> Optional[str]:
+    word = db.query(models.Word).filter(models.Word.word_name == word_name).first()
+    return word.word_content if word else None

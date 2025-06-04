@@ -5,6 +5,9 @@ import { useState, useEffect } from "react";
 import WordCardWithExamples from "@/components/WordCardWithExamples";
 import RelatedWordsModal from "@/components/RelatedWordsModal";
 import AiRelatedSearchModal from "@/components/AiRelatedSearchModal";
+import AiExampleModal from "@/components/AiExampleModal";
+import RelatedByNameModal from "@/components/RelatedByNameModal";
+
 
 interface Example {
   word_example_content: string;
@@ -29,7 +32,8 @@ export default function WordPage() {
   const [targetWordName, setTargetWordName] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isAiSearchModalOpen, setIsAiSearchModalOpen] = useState(false);
-
+  const [isAiExampleModalOpen, setIsAiExampleModalOpen] = useState(false);
+  const [isRelatedByNameModalOpen, setIsRelatedByNameModalOpen] = useState(false);
   const [words, setWords] = useState<Word[]>([]);
   const [wordContent, setWordContent] = useState("");
   const [wordName, setWordName] = useState("");
@@ -163,17 +167,42 @@ export default function WordPage() {
       >
         단어 검색
       </button>
-      <button
-  onClick={() => setIsAiSearchModalOpen(true)}
-  className="bg-purple-600 text-white px-4 py-2 rounded ml-2"
->
-  🤖 AI 단어 추천 검색
-</button>
 
-<AiRelatedSearchModal
-  isOpen={isAiSearchModalOpen}
-  onClose={() => setIsAiSearchModalOpen(false)}
-/>
+      <button
+        onClick={() => setIsAiSearchModalOpen(true)}
+        className="bg-purple-600 text-white px-4 py-2 rounded ml-2"
+      >
+        🤖 AI 단어 추천 검색
+      </button>
+
+      <button
+        onClick={() => setIsRelatedByNameModalOpen(true)}
+        className="bg-purple-600 text-white px-4 py-2 rounded ml-2"
+      >
+        🤖 AI 단어 이름으로 관련 단어 검색
+      </button>
+
+      <button
+        onClick={() => setIsAiExampleModalOpen(true)}
+        className='bg-purple-600 text-white px-4 py-2 rounded ml-2'
+      >
+        🤖 AI 예문 생성
+      </button>
+
+      <RelatedByNameModal
+      isOpen={isRelatedByNameModalOpen}
+      onClose={() => setIsRelatedByNameModalOpen(false)}
+      /> 
+
+      <AiExampleModal
+        isOpen={isAiExampleModalOpen}
+        onClose={() => setIsAiExampleModalOpen(false)}
+      />
+
+      <AiRelatedSearchModal
+        isOpen={isAiSearchModalOpen}
+        onClose={() => setIsAiSearchModalOpen(false)}
+      />
 
       <RelatedWordsModal
         targetWord={targetWordName}
@@ -243,17 +272,13 @@ export default function WordPage() {
         <div className="flex gap-2 mb-4">
           <button
             onClick={() => setSortByCount(false)}
-            className={`px-4 py-2 rounded text-white ${
-              !sortByCount ? "bg-blue-500" : "bg-gray-400"
-            }`}
+            className={`px-4 py-2 rounded text-white ${!sortByCount ? "bg-blue-500" : "bg-gray-400"}`}
           >
             최신순 보기
           </button>
           <button
             onClick={() => setSortByCount(true)}
-            className={`px-4 py-2 rounded text-white ${
-              sortByCount ? "bg-blue-500" : "bg-gray-400"
-            }`}
+            className={`px-4 py-2 rounded text-white ${sortByCount ? "bg-blue-500" : "bg-gray-400"}`}
           >
             조회수순 보기
           </button>

@@ -4,11 +4,12 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import WordExampleItem from '@/components/WordExampleItem';
 
 interface WordDetail {
   word_name: string;
   word_content: string;
-  word_id: number;
+  words_id: number;
   user_id: string;
   word_created_time: string;
   word_count: number;
@@ -25,11 +26,12 @@ export default function WordDetailPage() {
 
   useEffect(() => {
     if (!user_id || !word_id) return;
-
+  
     const fetchWord = async () => {
       try {
         const res = await fetch(`http://localhost:8000/words/${user_id}/id/${word_id}`);
         const data = await res.json();
+        console.log("📦 단어 데이터 응답:", data); // ✅ 여기 추가
         setWord(data);
       } catch (error) {
         console.error('단어 불러오기 실패:', error);
@@ -37,30 +39,43 @@ export default function WordDetailPage() {
         setLoading(false);
       }
     };
-
+  
     fetchWord();
   }, [user_id, word_id]);
+  
 
   const handleDelete = async () => {
     const confirmed = window.confirm("정말 삭제하시겠습니까?");
     if (!confirmed) return;
 
-    try{
-        const response = await fetch(`http://localhost:8000/words/${word_id}`,{
-            method: "DELETE",
-        });
-        if (response.ok){
-            alert("삭제되었습니다.");
-            window.location.href = `/word`;
-        }else {
-            alert("삭제에 실패 하였습니다.");
-        }
-    }catch(error){
-        console.error("삭제 오류:", error);
-        alert("삭제 중 오류가 발생했습니다.");
-    }};
-    
-    
+    try {
+      const response = await fetch(`http://localhost:8000/words/${word_id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        alert("삭제되었습니다.");
+        window.location.href = `/word`;
+      } else {
+        alert("삭제에 실패 하였습니다.");
+      }
+    } catch (error) {
+      console.error("삭제 오류:", error);
+      alert("삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  const updateExampleContent = (sequence: number, newContent: string) => {
+    if (!word) return;
+    setWord({
+      ...word,
+      examples: word.examples.map((ex) =>
+        ex.example_sequence === sequence
+          ? { ...ex, word_example_content: newContent }
+          : ex
+      ),
+    });
+  };
+
   if (loading) return <p>Loading...</p>;
   if (!word) return <p>단어를 찾을 수 없습니다.</p>;
 
@@ -76,16 +91,24 @@ export default function WordDetailPage() {
       <div className="mt-4">
         <h2 className="font-semibold">예시 문장</h2>
         <ul className="list-disc pl-5 space-y-1">
-          {word.examples?.map((ex: any) => (
+          {word.examples?.map((ex) => (
             <li key={ex.example_sequence}>
-              ({ex.example_sequence}) {ex.word_example_content}
+              <WordExampleItem
+                wordId={word.words_id}
+                example={ex}
+                onUpdate={(newContent) => updateExampleContent(ex.example_sequence, newContent)}
+              />
             </li>
           ))}
         </ul>
       </div>
 
-<button onClick={handleDelete}>삭제</button>
-
+      <button
+        onClick={handleDelete}
+        className="mt-6 bg-red-500 text-white px-4 py-2 rounded"
+      >
+        삭제
+      </button>
     </div>
   );
 }
