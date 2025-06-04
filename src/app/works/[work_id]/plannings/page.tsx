@@ -66,6 +66,7 @@ export default function PlanningListPage() {
           + 기획 추가
         </button>
       </div>
+      
     </div>
   );
 }

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import WorkCard from '@/components/WorkCard';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 interface Work {
   works_id: number;
@@ -14,6 +15,7 @@ interface Work {
 export default function WorksPage() {
   const { data: session, status } = useSession();
   const [works, setWorks] = useState<Work[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     if (status === "authenticated" && session?.user?.email) {
@@ -51,17 +53,19 @@ export default function WorksPage() {
             />
           ))}
         </div>
-      </div>
 
       {/* 떠다니는 버튼 */}
-      <Link
-        href="/works/new"
-        className="fixed bottom-6 right-6 z-50"
-      >
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition">
+      
+    <div className="mt-6">
+        <button
+          onClick={() => router.push(`/works/new`)}
+          className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 shadow"
+          >
           + 작품 추가
         </button>
-      </Link>
+        </div>
+      </div>
     </div>
+
   );
 }

@@ -74,10 +74,15 @@ export default function EpisodeDetailPage() {
       </div>
 
       {/* 떠다니는 버튼 */}
+      <button className="px-4 py-2 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition"
+        onClick={() => router.push(`/works/${work_id}/episodes/${episode_id}/edit`)}>
+
+          ✏️ 에피소드 수정
+        </button>
         <button className="px-4 py-2 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition"
         onClick={() => handleDeleteEpisode(episode.episode_id)}>
 
-          - 에피소드 삭제
+          ❌ 에피소드 삭제
         </button>
     </div>
     

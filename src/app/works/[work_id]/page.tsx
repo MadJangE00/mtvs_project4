@@ -97,13 +97,13 @@ export default function WorkDetailPage() {
 
       <h2 className="text-lg font-semibold mb-4">📘 에피소드 목록</h2>
       <div className="grid grid-cols-4 gap-4">
-        {work.episodes.map((ep) => (
+        {work.episodes.map((ep,index) => (
           <Link
             key={ep.episode_id}
             href={`/works/${work_id}/episodes/${ep.episode_id}`}
             className="bg-white p-3 rounded shadow-sm hover:bg-gray-100 block text-center"
           >
-            EP. {ep.episode_id}
+            EP. {index + 1}
           </Link>
         ))}
       </div>
@@ -116,6 +116,12 @@ export default function WorkDetailPage() {
         </Link>
       </div>
       <div className="mt-10 text-center">
+      <button
+    onClick={() => router.push(`/works/${work_id}/edit`)}
+    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+  >
+    🗑 작품 수정
+  </button>
   <button
     onClick={handleDelete}
     className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
