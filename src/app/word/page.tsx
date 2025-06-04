@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import WordCardWithExamples from "@/components/WordCardWithExamples";
 import RelatedWordsModal from "@/components/RelatedWordsModal";
+import AiRelatedSearchModal from "@/components/AiRelatedSearchModal";
 
 interface Example {
   word_example_content: string;
@@ -27,6 +28,8 @@ export default function WordPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [targetWordName, setTargetWordName] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isAiSearchModalOpen, setIsAiSearchModalOpen] = useState(false);
+
   const [words, setWords] = useState<Word[]>([]);
   const [wordContent, setWordContent] = useState("");
   const [wordName, setWordName] = useState("");
@@ -160,6 +163,17 @@ export default function WordPage() {
       >
         단어 검색
       </button>
+      <button
+  onClick={() => setIsAiSearchModalOpen(true)}
+  className="bg-purple-600 text-white px-4 py-2 rounded ml-2"
+>
+  🤖 AI 단어 추천 검색
+</button>
+
+<AiRelatedSearchModal
+  isOpen={isAiSearchModalOpen}
+  onClose={() => setIsAiSearchModalOpen(false)}
+/>
 
       <RelatedWordsModal
         targetWord={targetWordName}
