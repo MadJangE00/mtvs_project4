@@ -47,7 +47,7 @@ export default function CharacterDetailPage() {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/works/${work_id}/characters/${character_id}`, {
+      const res = await fetch(`http://localhost:8000/works/${work_id}characters/${character_id}`, {
         method: 'DELETE',
       });
 
@@ -72,7 +72,7 @@ export default function CharacterDetailPage() {
 
     setGenerating(true);
     try {
-      const res = await fetch('http://192.168.1.2:8100/generate-image', {
+      const res = await fetch('http://192.168.1.10:8100/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: character.character_settings }),
@@ -84,7 +84,7 @@ export default function CharacterDetailPage() {
 
       if (data.image_urls?.length > 0) {
         const relativeUrl = data.image_urls[0];
-        const fullUrl = `http://192.168.1.2:8100${relativeUrl}`;
+        const fullUrl = `http://192.168.1.10:8100${relativeUrl}`;
         setImageUrl(fullUrl);
       } else {
         throw new Error('이미지 URL이 비어 있습니다.');

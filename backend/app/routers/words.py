@@ -1111,3 +1111,111 @@ def get_related_words(word_name: str, db: Session = Depends(database.get_db)):
         raise HTTPException(status_code=500, detail=f"LLM 결과 파싱 실패: {e}")
 
     return {"related_words": related_words}
+
+
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+
+class WordRequest(BaseModel):
+    word: str
+
+class ExampleResponse(BaseModel):
+    word: str
+    easy_meaning: str
+    success: bool
+    message: str = ""
+
+def easy_min(word: str) -> dict:
+    """
+    단어의 뜻을 아주 쉽게 설명하는 함수
+    
+    Args:
+        word (str): 뜻을 생성할 단어
+        
+    Returns:
+        dict: 결과를 포함한 딕셔너리
+    """
+    try:
+        # 빈 문자열 체크
+        if not word or word.strip() == "":
+            return {
+                "success": False,
+                "message": "단어를 입력해주세요.",
+                "word": word,
+                "easy_meaning": ""
+            }
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", 
+            f"""
+    사용자가 제공한 단어의 정확한 사전적 의미만을 참고하여, 그 뜻을 초등학생 수준에 맞춰 가장 쉽고 명확하게 설명하십시오.
+
+엄격한 제약 조건:
+
+1. 절대 예시나 문맥을 사용하지 마십시오. 오직 단어의 뜻 자체만을 설명해야 합니다.
+2. 부가적인 내용이나 사족을 어떠한 경우에도 넣지 마십시오.
+3. 친근하거나 대화체인 말투는 일체 사용하지 마십시오. 특히, '~의미해', '~있어', '~단어야', '~하는 거야', '예를 들어' 와 같은 표현은 절대 금지합니다.
+4. 존댓말을 사용하지 마십시오.
+5. 사전이나 백과사전에서 정의를 내릴 때 사용하는 방식처럼 격식 있고 간결한 어투를 사용하십시오.
+6. 단어에 동음이의어가 하나라도 존재한다면, 반드시 모든 의미를 빠짐없이 나열하여 설명하십시오. 단 하나의 의미라도 빠뜨리는 것을 금지합니다.(예: 1. 과일의 일종으로...열매. \n2. 물 위에 ...사용)
+7. 초등학생이 이해할 수 있도록 어려운 한자어나 전문 용어는 피하고 일상적인 언어로 설명하십시오.
+8. 설명하고자 하는 단어를 반복적으로 사용하지 마십시오. 특히, 문장이나 문단 시작 시 해당 단어의 반복 사용을 엄격히 금지합니다.
+9. 다음과 같은 구조의 문장 사용을 금지합니다: '단어는/는 ...이다' (예: 배는 ...이다).
+10. 설명 외에 부가적인 정보나 묘사를 추가하지 마십시오. 정의 그 자체에 집중하십시오.
+
+우선순위:
+
+위에 제시된 '엄격한 제약 조건'들을 최우선으로 따르십시오. '쉽게 설명'하는 것은 언어 선택과 개념의 단순화에 한정되며, 말투나 형식에 대한 제약 조건을 위반해서는 안 됩니다.
+    """),
+    ('human', '{input}'),
+])
+
+        # 모델 로드 (올바른 모델명 사용)
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",  # 수정된 모델명
+            # gemma3:1b
+            temperature=0,
+            max_tokens=500, 
+        )
+
+        chain = prompt | llm | StrOutputParser()
+
+        # 매개변수로 받은 word 사용 (고정값 제거)
+        result = chain.invoke({"input": word})
+        
+        return {
+            "success": True,
+            "message": "쉬운 단어 설명 생성 완료",
+            "word": word,
+            "easy_meaning": result
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"오류가 발생했습니다: {str(e)}",
+            "word": word,
+            "easy_meaning": ""
+        }
+
+# GET 방식 쉬운 뜻 생성
+@router.get("/generate/{word}/easy")
+async def generate_examples_get(word: str):
+    """
+    GET 방식으로 단어에 대한 쉬운 뜻을 생성합니다.
+    """
+    try:
+        result = easy_min(word)
+        
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["message"])
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"서버 내부 오류: {str(e)}")

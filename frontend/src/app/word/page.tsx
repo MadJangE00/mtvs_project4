@@ -7,7 +7,7 @@ import RelatedWordsModal from "@/components/RelatedWordsModal";
 import AiRelatedSearchModal from "@/components/AiRelatedSearchModal";
 import AiExampleModal from "@/components/AiExampleModal";
 import RelatedByNameModal from "@/components/RelatedByNameModal";
-
+import EasyExampleModal from '@/components/EasyExample';
 
 interface Example {
   word_example_content: string;
@@ -34,6 +34,7 @@ export default function WordPage() {
   const [isAiSearchModalOpen, setIsAiSearchModalOpen] = useState(false);
   const [isAiExampleModalOpen, setIsAiExampleModalOpen] = useState(false);
   const [isRelatedByNameModalOpen, setIsRelatedByNameModalOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [words, setWords] = useState<Word[]>([]);
   const [wordContent, setWordContent] = useState("");
   const [wordName, setWordName] = useState("");
@@ -168,6 +169,15 @@ export default function WordPage() {
         단어 검색
       </button>
 
+      <button
+        className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+        onClick={() => setShowModal(true)}
+      >
+        쉬운 예문 생성
+      </button>
+
+      {showModal && <EasyExampleModal onClose={() => setShowModal(false)} />}
+        
       <button
         onClick={() => setIsAiSearchModalOpen(true)}
         className="bg-purple-600 text-white px-4 py-2 rounded ml-2"
