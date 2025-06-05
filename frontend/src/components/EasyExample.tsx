@@ -8,7 +8,6 @@ interface EasyExampleModalProps {
 
 export default function EasyExampleModal({ onClose }: EasyExampleModalProps) {
   const [word, setWord] = useState('');
-  const [example, setExample] = useState('');
   const [loading, setLoading] = useState(false);
   const [easyMeaning, setEasyMeaning] = useState('');
 
@@ -23,8 +22,8 @@ export default function EasyExampleModal({ onClose }: EasyExampleModalProps) {
       const data = await res.json();
       setEasyMeaning(data.easy_meaning);
     } catch (error) {
-      console.error("예문 생성 실패:", error);
-      alert("예문을 생성하지 못했습니다.");
+      console.error("설명 생성 실패:", error);
+      alert("설명을 생성하지 못했습니다.");
     } finally {
       setLoading(false);
     }
@@ -33,7 +32,7 @@ export default function EasyExampleModal({ onClose }: EasyExampleModalProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">예문 생성</h2>
+        <h2 className="text-xl font-bold mb-4">설명 생성</h2>
 
         <input
           type="text"
@@ -48,12 +47,12 @@ export default function EasyExampleModal({ onClose }: EasyExampleModalProps) {
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           disabled={loading}
         >
-          {loading ? '생성 중...' : '예문 생성'}
+          {loading ? '생성 중...' : '설명 생성'}
         </button>
 
         {easyMeaning && (
           <div className="mt-4 p-3 bg-gray-100 border rounded text-gray-800">
-            <strong>예문:</strong> {easyMeaning}
+            <strong>설명:</strong> {easyMeaning}
           </div>
         )}
 

@@ -170,14 +170,14 @@ export default function WordPage() {
       </button>
 
       <button
-        className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+        className="bg-blue-500 text-white px-4 py-2 rounded mb-6 ml-2"
         onClick={() => setShowModal(true)}
       >
-        쉬운 예문 생성
+        쉬운 설명 생성
       </button>
 
       {showModal && <EasyExampleModal onClose={() => setShowModal(false)} />}
-        
+
       <button
         onClick={() => setIsAiSearchModalOpen(true)}
         className="bg-purple-600 text-white px-4 py-2 rounded ml-2"
