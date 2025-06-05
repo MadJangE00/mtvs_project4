@@ -10,25 +10,32 @@ export default function EditCharacterPage() {
   };
 
   const router = useRouter();
+
   const [name, setName] = useState('');
   const [settings, setSettings] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const fetchCharacter = async () => {
-    try {
-      const res = await fetch(`http://localhost:8000/works/${work_id}/characters/${character_id}`);
-      if (!res.ok) throw new Error('캐릭터 정보를 불러올 수 없습니다.');
-      const data = await res.json();
-      setName(data.character_name);
-      setSettings(data.character_settings);
-    } catch (err) {
-      console.error(err);
-      alert('캐릭터 로딩 실패');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 캐릭터 정보 불러오기
+  useEffect(() => {
+    const fetchCharacter = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/works/${work_id}/characters/${character_id}`);
+        if (!res.ok) throw new Error('캐릭터 정보를 불러올 수 없습니다.');
+        const data = await res.json();
+        setName(data.character_name);
+        setSettings(data.character_settings);
+      } catch (err) {
+        console.error(err);
+        alert('캐릭터 로딩 실패');
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    if (work_id && character_id) fetchCharacter();
+  }, [work_id, character_id]);
+
+  // 캐릭터 수정 요청
   const handleUpdate = async () => {
     if (!name.trim()) {
       alert('캐릭터 이름을 입력하세요.');
@@ -36,19 +43,16 @@ export default function EditCharacterPage() {
     }
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/works/${work_id}/characters/${character_id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            character_name: name,
-            character_settings: settings,
-          }),
-        }
-      );
+      const res = await fetch(`http://localhost:8000/works/${work_id}characters/${character_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          character_name: name,
+          character_settings: settings,
+        }),
+      });
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -56,16 +60,12 @@ export default function EditCharacterPage() {
       }
 
       alert('✅ 캐릭터 정보가 수정되었습니다.');
-      router.push(`/works/${work_id}/characters/${character_id}`);
+      router.push(`/works/${work_id}/characters`);
     } catch (err) {
       console.error('수정 실패:', err);
       alert('캐릭터 수정 실패');
     }
   };
-
-  useEffect(() => {
-    fetchCharacter();
-  }, [work_id, character_id]);
 
   if (loading) return <div className="p-6">로딩 중...</div>;
 
