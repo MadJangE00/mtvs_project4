@@ -43,7 +43,7 @@ export default function EditCharacterPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/works/${work_id}characters/${character_id}`, {
+      const res = await fetch(`http://localhost:8000/works/${work_id}/characters/${character_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import AiPromptModal from '@/components/AiPromptModal'; 
+import LoadingSpinner from '@/components/LoadingSpinner';// ✅ 새로 추가된 컴포넌트
 
 interface Episode {
   episode_id: number;
@@ -18,23 +20,24 @@ export default function EpisodeDetailPage() {
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [episodeIndex, setEpisodeIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false); // ✅ 프롬프트 입력용
+
   const router = useRouter();
 
   useEffect(() => {
     const fetchEpisode = async () => {
       try {
-        // 1️⃣ 전체 작품 데이터 가져오기
         const res = await fetch(`http://localhost:8000/works/${work_id}/work`);
         const data = await res.json();
 
-        // 2️⃣ 현재 에피소드 찾기
         const episodes: Episode[] = data.episodes;
         const index = episodes.findIndex(ep => ep.episode_id === parseInt(episode_id));
         const foundEpisode = episodes[index];
 
         if (foundEpisode) {
           setEpisode(foundEpisode);
-          setEpisodeIndex(index + 1); // 1부터 시작
+          setEpisodeIndex(index + 1);
         }
       } catch (err) {
         console.error('에피소드 불러오기 실패:', err);
@@ -46,9 +49,9 @@ export default function EpisodeDetailPage() {
     fetchEpisode();
   }, [work_id, episode_id]);
 
-  const handleDeleteEpisode = async (episodeId: number) => {
+  const handleDeleteEpisode = async () => {
     const confirmDelete = confirm("정말로 이 에피소드를 삭제 하시겠습니까?");
-    if (!confirmDelete) return;
+    if (!confirmDelete || !episode) return;
 
     try {
       const res = await fetch(`http://localhost:8000/episodes/${work_id}/${episode_id}`, {
@@ -62,14 +65,38 @@ export default function EpisodeDetailPage() {
         return;
       }
 
-      const deleted = await res.json();
-      console.log('삭제 완료:', deleted);
-
       alert("에피소드가 성공적으로 삭제되었습니다.");
       router.push(`/works/${work_id}`);
     } catch (error) {
       console.error("삭제 오류:", error);
       alert("에피소드 삭제에 실패했습니다.");
+    }
+  };
+
+  const handleGenerateAIContent = async (prompt: string) => {
+    if (!episode) return;
+    setGenerating(true);
+    try {
+      const res = await fetch(
+        `http://localhost:8000/episodes/${work_id}/${episode_id}/ai_episode_content`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ additional_prompt: prompt }),
+        }
+      );
+
+      const data = await res.json();
+      setEpisode((prev) =>
+        prev ? { ...prev, episode_content: data.episode_content } : prev
+      );
+    } catch (err) {
+      console.error('AI 생성 실패:', err);
+      alert('AI 콘텐츠 생성 중 오류가 발생했습니다.');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -93,11 +120,28 @@ export default function EpisodeDetailPage() {
         </button>
         <button
           className="px-4 py-2 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition"
-          onClick={() => handleDeleteEpisode(episode.episode_id)}
+          onClick={handleDeleteEpisode}
         >
           ❌ 에피소드 삭제
         </button>
+        <button
+          className="px-4 py-2 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition"
+          onClick={() => setShowPromptModal(true)}
+          disabled={generating}
+        >
+          🤖 AI로 콘텐츠 생성
+        </button>
       </div>
+
+{showPromptModal && (
+  <AiPromptModal
+    onSubmit={handleGenerateAIContent}
+    onClose={() => setShowPromptModal(false)}
+  />
+)}
+
+{generating && <LoadingSpinner />}
+
     </div>
   );
 }

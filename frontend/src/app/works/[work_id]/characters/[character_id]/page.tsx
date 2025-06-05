@@ -47,7 +47,7 @@ export default function CharacterDetailPage() {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/works/${work_id}characters/${character_id}`, {
+      const res = await fetch(`http://localhost:8000/works/${work_id}/characters/${character_id}`, {
         method: 'DELETE',
       });
 
