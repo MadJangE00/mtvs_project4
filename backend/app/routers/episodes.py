@@ -1,12 +1,14 @@
 import os
 from dotenv import load_dotenv, find_dotenv
-from fastapi import APIRouter, Depends, HTTPException, Path, Body, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Body, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from langchain_openai import ChatOpenAI
 
 from .. import crud, models, schemas, database # 경로는 프로젝트 구조에 맞게 조정
-# from ..auth import get_current_active_user # 인증 필요시
+from ..llm_service import llm_service
+from ..crud.opensearch_crud import search_relevant_documents  # OpenSearch RAG 함수
+
 
 env_loaded = load_dotenv(find_dotenv(usecwd=True))
 if env_loaded:
@@ -246,7 +248,7 @@ async def generate_and_update_ai_episode_content(
         )
 
     # 4. DB 업데이트
-    updated_db_episode = crud.episodes.update_episode_content(  
+    updated_db_episode = crud.episodes.update_episode_content(
         db=db,
         work_id=work_id,
         episode_id=episode_id,
@@ -299,3 +301,95 @@ def get_episode_detail_for_work(
             detail=f"작품 ID {work_id}에서 ID가 {episode_id}인 에피소드를 찾을 수 없습니다.",
         )
     return db_episode
+
+
+router.get(
+    "/works/{works_id}/preview_dialogue_with_rag",
+    response_model=schemas.EpisodeContentPreview,  # 결과를 보여줄 새로운 스키마 필요
+    summary="RAG를 사용하여 생성될 대사 미리보기 (DB 저장 안 함)",
+)
+
+
+async def preview_dialogue_with_rag_endpoint(
+    works_id: int = Path(..., description="대사를 생성할 작품의 ID"),
+    # GET 요청이므로 요청 본문(Body) 대신 쿼리 파라미터 사용
+    user_input_content: str = Query(
+        ..., description="생성할 에피소드의 핵심 설명 (사용자 입력)"
+    ),
+    additional_prompt: Optional[str] = Query(
+        None, description="생성을 위한 추가적인 프롬프트 또는 지시사항"
+    ),
+    db: Session = Depends(
+        database.get_db
+    ),  # RDB 접근이 필요 없을 수도 있지만, works_id 유효성 검사 등에 사용 가능
+):
+    # (선택 사항) 작품 존재 여부 확인
+    db_work = crud.works.get_work_by_id(db, work_id=works_id)
+    if not db_work:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"ID가 {works_id}인 작품을 찾을 수 없습니다.",
+        )
+
+    # 1. RAG: OpenSearch에서 관련 문서 검색 (사용자가 입력한 'user_input_content'를 쿼리로 사용)
+    relevant_docs = search_relevant_documents(
+        query_text=user_input_content,  # 쿼리 파라미터로 받은 내용 사용
+        works_id=works_id,
+        top_k=5,
+    )
+    if not relevant_docs:
+        print(
+            f"No relevant documents found via RAG for works_id {works_id} (preview) using user input content: '{user_input_content}'"
+        )
+
+    # 2. LLM 서비스 호출하여 "순수 대사" 생성
+    try:
+        llm_pure_dialogue = llm_service.generate_dialogue(
+            relevant_docs=relevant_docs,
+            user_provided_context=user_input_content,  # llm_service의 파라미터명에 맞춤
+            additional_prompt=additional_prompt,
+        )
+    except ValueError as ve:  # llm_service._call_llm에서 발생시킨 ValueError 처리
+        print(f"LLM service error during dialogue preview: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,  # LLM 서비스 문제로 간주
+            detail=str(ve),  # LLM 서비스의 에러 메시지 전달
+        )
+    except Exception as e:
+        print(f"Error calling LLM service for dialogue preview: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="LLM service failed during dialogue preview.",
+        )
+
+    if (
+        not llm_pure_dialogue
+        or ("LLM Error" in llm_pure_dialogue)
+        or ("LLM API call failed" in llm_pure_dialogue)
+        or not llm_pure_dialogue.strip()
+    ):
+        # LLM 서비스가 오류 문자열을 반환하는 경우도 처리
+        error_detail = "LLM failed to generate valid dialogue content for preview."
+        if (
+            "LLM Error" in llm_pure_dialogue
+            or "LLM API call failed" in llm_pure_dialogue
+        ):
+            error_detail = llm_pure_dialogue  # 실제 LLM 서비스 에러 메시지 사용
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_detail,
+        )
+
+    # 3. 결과 반환 (DB 저장 안 함)
+    #    사용자가 입력한 'user_input_content' (원본 설명 역할)와 생성된 대사를 함께 반환합니다.
+    #    이를 위해 새로운 Pydantic 스키마 (예: EpisodeContentPreview)가 필요합니다.
+    return schemas.EpisodeContentPreview(
+        user_input_content=user_input_content,
+        generated_dialogue=llm_pure_dialogue,
+        relevant_context_summary=(
+            [doc.get("text_content", "") for doc in relevant_docs]
+            if relevant_docs
+            else ["관련 컨텍스트 없음"]
+        ),  # RAG 컨텍스트 요약 (선택 사항)
+    )

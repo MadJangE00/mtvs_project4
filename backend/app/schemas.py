@@ -258,6 +258,7 @@ class EpisodeAIContentResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True) # 필요시
 
+
 # --- Work ---
 class WorkBase(BaseModel):
     works_title: Optional[str] = Field(
@@ -339,3 +340,28 @@ class ExampleResponse(BaseModel):
     examples: str
     success: bool
     message: str = ""
+
+
+# 마지막
+class GenerateDialoguePayload(BaseModel):  # schemas.py에 있다면 거기서 임포트
+    episode_content: str = Field(..., description="생성할 에피소드의 핵심 설명")
+    additional_prompt: Optional[str] = Field(
+        None, description="생성을 위한 추가적인 프롬프트 또는 지시사항"
+    )
+
+
+class ModifyDialoguePayload(BaseModel):  # schemas.py에 있다면 거기서 임포트
+    modification_instruction: str = Field(
+        ..., description="현재 대사를 어떻게 수정할지에 대한 구체적인 지시"
+    )
+    additional_prompt: Optional[str] = Field(
+        None, description="수정 시 추가적인 컨텍스트 또는 지시사항"
+    )
+
+
+class EpisodeContentPreview(BaseModel):
+    user_input_content: str = Field(description="사용자가 입력한 에피소드 설명/내용")
+    generated_dialogue: str = Field(description="AI에 의해 생성된 대사 (미리보기)")
+    relevant_context_summary: Optional[List[str]] = Field(
+        None, description="대사 생성에 사용된 RAG 컨텍스트 요약 (선택 사항)"
+    )

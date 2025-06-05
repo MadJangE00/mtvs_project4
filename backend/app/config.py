@@ -42,3 +42,7 @@ DIALOGUE_LLM_TEMP = float(os.getenv("DIALOGUE_LLM_TEMPERATURE", "0.7"))  # 기�
 
 # AI_UTILS 설정
 AI_UTILS_MODEL = os.getenv("AI_UTILS_MODEL_NAME", "gpt-4o-mini")  # 기본값 설정
+
+OPENSEARCH_RAG_INDEX_NAME = os.getenv(
+    "OPENSEARCH_RAG_INDEX_NAME", "works_rag_content_index"
+)
