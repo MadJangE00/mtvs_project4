@@ -15,6 +15,7 @@ export default function NewEpisodePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          works_id: parseInt(work_id),
           episode_content: episodeContent,
         }),
       });
